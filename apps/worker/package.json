@@ -1,0 +1,26 @@
+{
+  "name": "@hubcontabil/worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@hubcontabil/shared": "*",
+    "@nestjs/common": "^11.1.9",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.9",
+    "@prisma/client": "^6.19.0",
+    "bullmq": "^5.63.0",
+    "ioredis": "^5.8.2",
+    "reflect-metadata": "^0.2.2",
+    "resend": "^6.5.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.12"
+  }
+}

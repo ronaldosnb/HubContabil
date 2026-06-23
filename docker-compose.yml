@@ -1,0 +1,93 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hubcontabil-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hubcontabil}
+      POSTGRES_USER: ${POSTGRES_USER:-hubcontabil}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hubcontabil}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: hubcontabil-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  wppconnect:
+    image: wppconnect/server-cli:latest
+    container_name: hubcontabil-wppconnect
+    restart: unless-stopped
+    profiles:
+      - wppconnect
+    ports:
+      - "21465:21465"
+    volumes:
+      - wppconnect_tokens:/usr/src/wpp-server/tokens
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: hubcontabil-api
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-hubcontabil}:${POSTGRES_PASSWORD:-hubcontabil}@postgres:5432/${POSTGRES_DB:-hubcontabil}?schema=public
+      REDIS_HOST: redis
+      STORAGE_ROOT: /app/storage
+    ports:
+      - "3333:3333"
+    volumes:
+      - app_storage:/app/storage
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    container_name: hubcontabil-worker
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-hubcontabil}:${POSTGRES_PASSWORD:-hubcontabil}@postgres:5432/${POSTGRES_DB:-hubcontabil}?schema=public
+      REDIS_HOST: redis
+      STORAGE_ROOT: /app/storage
+      WPPCONNECT_BASE_URL: ${WPPCONNECT_BASE_URL:-http://wppconnect:21465}
+    volumes:
+      - app_storage:/app/storage
+    depends_on:
+      - postgres
+      - redis
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: hubcontabil-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333/api}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
+  app_storage:
+  wppconnect_tokens:

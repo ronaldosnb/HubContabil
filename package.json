@@ -1,0 +1,41 @@
+{
+  "name": "hubcontabil",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MVP interno para gerenciamento operacional de escritório contábil.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w @hubcontabil/api\" \"npm run dev -w @hubcontabil/worker\" \"npm run dev -w @hubcontabil/web\"",
+    "build": "npm run build -w @hubcontabil/shared && npm run build -w @hubcontabil/api && npm run build -w @hubcontabil/worker && npm run build -w @hubcontabil/web",
+    "lint": "eslint .",
+    "test": "npm run test -w @hubcontabil/shared && npm run test -w @hubcontabil/api",
+    "format": "prettier --write .",
+    "typecheck": "npm run build -w @hubcontabil/shared && npm run typecheck -w @hubcontabil/api && npm run typecheck -w @hubcontabil/worker && npm run typecheck -w @hubcontabil/web",
+    "prisma:generate": "npm run prisma:generate -w @hubcontabil/api",
+    "prisma:migrate": "npm run prisma:migrate -w @hubcontabil/api",
+    "prisma:seed": "npm run prisma:seed -w @hubcontabil/api"
+  },
+  "overrides": {
+    "@nestjs/platform-express": {
+      "multer": "2.2.0"
+    },
+    "next": {
+      "postcss": "8.5.15"
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.1",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "^16.0.3",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.47.0"
+  }
+}
