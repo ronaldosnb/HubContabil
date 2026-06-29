@@ -21,16 +21,7 @@ services:
     volumes:
       - redis_data:/data
 
-  wppconnect:
-    image: wppconnect/server-cli:latest
-    container_name: hubcontabil-wppconnect
-    restart: unless-stopped
-    profiles:
-      - wppconnect
-    ports:
-      - "21465:21465"
-    volumes:
-      - wppconnect_tokens:/usr/src/wpp-server/tokens
+
 
   api:
     build:
@@ -90,4 +81,3 @@ volumes:
   postgres_data:
   redis_data:
   app_storage:
-  wppconnect_tokens:
