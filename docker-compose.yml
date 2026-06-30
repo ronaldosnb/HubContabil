@@ -14,7 +14,7 @@ services:
       REDIS_PORT: ${REDIS_PORT:-6379}
       STORAGE_ROOT: /app/storage
     ports:
-      - "7001:3333"
+      - "3333:3333"
     volumes:
       - app_storage:/app/storage
 
@@ -43,9 +43,9 @@ services:
     container_name: hubcontabil-web
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:7001/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333/api}
     ports:
-      - "7000:3000"
+      - "3000:3000"
     depends_on:
       - api
 

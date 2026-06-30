@@ -9,7 +9,7 @@ Este MVP foi preparado para rodar a aplicação com Docker Compose e usar servi�
 - PostgreSQL acessível pela `DATABASE_URL`.
 - Redis acessível por `REDIS_HOST` e `REDIS_PORT`.
 - WPPConnect acessível por `WPPCONNECT_BASE_URL`.
-- Portas `7000` e `7001` livres para web e API.
+- Portas `3000` e `3333` livres para web e API.
 - Volume persistente para arquivos de clientes.
 
 ## Variáveis essenciais
