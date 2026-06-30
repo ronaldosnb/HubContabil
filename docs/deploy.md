@@ -1,14 +1,16 @@
 # Deploy em VPS
 
-Este MVP foi preparado para rodar com Docker Compose em uma VPS.
+Este MVP foi preparado para rodar a aplicação com Docker Compose e usar serviços externos para PostgreSQL, Redis e WPPConnect.
 
 ## Pré-requisitos
 
 - Docker e Docker Compose instalados.
 - Arquivo `.env` criado a partir de `.env.example`.
-- Portas `3000`, `3333`, `5432` e `6379` ajustadas conforme a infraestrutura.
+- PostgreSQL acessível pela `DATABASE_URL`.
+- Redis acessível por `REDIS_HOST` e `REDIS_PORT`.
+- WPPConnect acessível por `WPPCONNECT_BASE_URL`.
+- Portas `7000` e `7001` livres para web e API.
 - Volume persistente para arquivos de clientes.
-- WPPConnect pode rodar como serviço externo ou pelo profile opcional `wppconnect` do Compose.
 
 ## Variáveis essenciais
 
@@ -39,7 +41,6 @@ npm run lint
 npm run test
 npm run build
 docker compose config
-docker compose up -d postgres redis
 npm run prisma:migrate
 npm run prisma:seed
 docker compose up -d --build
@@ -48,14 +49,6 @@ docker compose up -d --build
 Em produção, use `prisma migrate deploy` dentro do serviço da API ou em uma etapa de release controlada.
 
 Após o seed inicial, o administrador pode ajustar pela tela de configurações o nome do escritório, remetente, sessão WPPConnect e templates. Chaves e tokens reais permanecem somente no `.env`.
-
-Para rodar WPPConnect no mesmo Compose, use:
-
-```bash
-docker compose --profile wppconnect up -d wppconnect
-```
-
-Nesse cenário, o worker usa `http://wppconnect:21465` como URL interna padrão. Se o WPPConnect estiver em outro servidor, defina `WPPCONNECT_BASE_URL` no `.env`.
 
 ## Arquivos de clientes
 

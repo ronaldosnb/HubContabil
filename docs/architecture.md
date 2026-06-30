@@ -7,7 +7,6 @@ O HubContabil segue o escopo definido em `GOAL.md`: um monorepo TypeScript com f
 - `apps/web`: interface interna da equipe. Não acessa banco diretamente.
 - `apps/api`: autenticação, autorização simples, regras de negócio, Prisma, metadados de arquivos, tarefas, documentos, envios e dashboard.
 - `apps/worker`: processamento assíncrono de envios, recorrências e retentativas.
-- `wppconnect` no Compose: serviço opcional por profile para hospedar WPPConnect junto ao MVP quando ele não estiver externo.
 
 ## Pacotes
 
@@ -16,6 +15,6 @@ O HubContabil segue o escopo definido em `GOAL.md`: um monorepo TypeScript com f
 
 ## Persistência
 
-PostgreSQL é o banco principal. Redis é usado apenas como backend de filas. Arquivos de clientes ficam no storage local do servidor e devem ser acessados pela API com autenticação.
+PostgreSQL é o banco principal. Redis é usado apenas como backend de filas. PostgreSQL, Redis e WPPConnect rodam como serviços externos configurados por variáveis de ambiente. Arquivos de clientes ficam no storage local do servidor e devem ser acessados pela API com autenticação.
 
 Configurações não secretas do escritório ficam na tabela `SystemSetting`, incluindo nome do escritório, remetente operacional, sessão WPPConnect e templates de mensagem. Segredos como `RESEND_API_KEY` e `WPPCONNECT_TOKEN` continuam em variáveis de ambiente.

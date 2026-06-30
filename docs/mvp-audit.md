@@ -18,7 +18,7 @@ Resumo do estado implementado contra `GOAL.md`.
 - Templates de envio configuráveis com variáveis do MVP.
 - Histórico de envios com status geral e por canal.
 - Worker para filas de e-mail, WhatsApp e tarefas recorrentes.
-- Docker Compose com web, API, worker, PostgreSQL, Redis e WPPConnect opcional por profile.
+- Docker Compose com web, API e worker, usando PostgreSQL, Redis e WPPConnect externos por variáveis de ambiente.
 - Kanban com filtros, drag and drop, detalhes, edição, conclusão, cancelamento e replicação de tarefas.
 - Tarefas recorrentes simples.
 - Dashboard com os seis indicadores definidos para o MVP.
@@ -36,7 +36,7 @@ npm run lint
 npm run test
 npm run build
 npm audit --omit=dev
-DATABASE_URL='postgresql://hubcontabil:hubcontabil@localhost:5432/hubcontabil?schema=public' npx prisma validate --schema apps/api/prisma/schema.prisma
+DATABASE_URL='postgresql://USER:PASSWORD@POSTGRES_HOST:5432/hubcontabil?schema=public' npx prisma validate --schema apps/api/prisma/schema.prisma
 docker compose config
 ```
 
