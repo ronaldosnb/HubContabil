@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsDateString,
   IsEmail,
   IsEnum,
   IsOptional,
@@ -42,6 +43,11 @@ export class CreateClientDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(180)
+  tradeName?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(32)
   documentNumber?: string;
 
@@ -49,6 +55,83 @@ export class CreateClientDto {
   @IsString()
   @MaxLength(80)
   taxRegime?: string;
+
+  @IsOptional()
+  @IsDateString()
+  openingDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  registrationStatus?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  stateRegistration?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  companySize?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  legalNature?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(240)
+  mainActivity?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  addressLine?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  addressNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  addressComplement?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  district?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2)
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(16)
+  zipCode?: string;
+
+  @IsOptional()
+  @IsEmail()
+  businessEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  businessPhone?: string;
+
+  @IsOptional()
+  @IsDateString()
+  cnpjwsUpdatedAt?: string;
 
   @IsOptional()
   @IsEnum(ClientStatus)

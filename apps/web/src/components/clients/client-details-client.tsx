@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   CLIENT_STATUS_LABELS,
@@ -26,6 +26,7 @@ import {
   getToken,
   listServices,
   listUsers,
+  lookupClientByCnpj,
   updateClientService,
   updateContact,
   updateClient
@@ -57,6 +58,7 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
   const [serviceForm, setServiceForm] = useState({ serviceId: "", notes: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCnpjLoading, setIsCnpjLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -82,8 +84,25 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
         type: clientData.type,
         name: clientData.name,
         legalName: clientData.legalName ?? "",
+        tradeName: clientData.tradeName ?? "",
         documentNumber: clientData.documentNumber ?? "",
         taxRegime: clientData.taxRegime ?? "",
+        openingDate: toDateInputValue(clientData.openingDate),
+        registrationStatus: clientData.registrationStatus ?? "",
+        stateRegistration: clientData.stateRegistration ?? "",
+        companySize: clientData.companySize ?? "",
+        legalNature: clientData.legalNature ?? "",
+        mainActivity: clientData.mainActivity ?? "",
+        addressLine: clientData.addressLine ?? "",
+        addressNumber: clientData.addressNumber ?? "",
+        addressComplement: clientData.addressComplement ?? "",
+        district: clientData.district ?? "",
+        city: clientData.city ?? "",
+        state: clientData.state ?? "",
+        zipCode: clientData.zipCode ?? "",
+        businessEmail: clientData.businessEmail ?? "",
+        businessPhone: clientData.businessPhone ?? "",
+        cnpjwsUpdatedAt: clientData.cnpjwsUpdatedAt ?? "",
         status: clientData.status,
         internalResponsibleId: clientData.internalResponsible?.id ?? "",
         notes: clientData.notes ?? ""
@@ -120,6 +139,43 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
       setError(error instanceof Error ? error.message : "Erro ao atualizar cliente.");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function onLookupCnpj() {
+    if (!clientForm) {
+      return;
+    }
+
+    const cnpj = clientForm.documentNumber?.replace(/\D/g, "") ?? "";
+
+    if (cnpj.length !== 14) {
+      setError("Informe um CNPJ com 14 dígitos para consultar.");
+      return;
+    }
+
+    setIsCnpjLoading(true);
+    setError(null);
+
+    try {
+      const data = await lookupClientByCnpj(cnpj);
+      setClientForm((current) =>
+        current
+          ? {
+              ...current,
+              ...data,
+              name: current.name || data.tradeName || data.legalName || data.name,
+              documentNumber: data.documentNumber,
+              status: current.status,
+              internalResponsibleId: current.internalResponsibleId,
+              notes: appendNotes(current.notes, data.notes)
+            }
+          : current
+      );
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Erro ao consultar CNPJ.");
+    } finally {
+      setIsCnpjLoading(false);
     }
   }
 
@@ -321,85 +377,241 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
             </CardHeader>
             <CardContent>
               <form className="space-y-3" onSubmit={onClientSubmit}>
-                <Input
-                  required
-                  value={clientForm.name}
-                  onChange={(event) =>
-                    setClientForm({ ...clientForm, name: event.target.value })
-                  }
-                />
-                <Input
-                  placeholder="Razão social"
-                  value={clientForm.legalName}
-                  onChange={(event) =>
-                    setClientForm({ ...clientForm, legalName: event.target.value })
-                  }
-                />
-                <Input
-                  placeholder="CPF/CNPJ"
-                  value={clientForm.documentNumber}
-                  onChange={(event) =>
-                    setClientForm({ ...clientForm, documentNumber: event.target.value })
-                  }
-                />
-                <Input
-                  placeholder="Regime tributário"
-                  value={clientForm.taxRegime}
-                  onChange={(event) =>
-                    setClientForm({ ...clientForm, taxRegime: event.target.value })
-                  }
-                />
-                <select
-                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                  value={clientForm.type}
-                  onChange={(event) =>
-                    setClientForm({ ...clientForm, type: event.target.value as ClientType })
-                  }
-                >
-                  {Object.entries(CLIENT_TYPE_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                  value={clientForm.status}
-                  onChange={(event) =>
-                    setClientForm({ ...clientForm, status: event.target.value as ClientStatus })
-                  }
-                >
-                  {Object.entries(CLIENT_STATUS_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                  value={clientForm.internalResponsibleId}
-                  onChange={(event) =>
-                    setClientForm({
-                      ...clientForm,
-                      internalResponsibleId: event.target.value
-                    })
-                  }
-                >
-                  <option value="">Sem responsável</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-                <textarea
-                  className="min-h-24 w-full rounded-md border border-border bg-background p-3 text-sm outline-none"
-                  placeholder="Observações"
-                  value={clientForm.notes}
-                  onChange={(event) =>
-                    setClientForm({ ...clientForm, notes: event.target.value })
-                  }
-                />
+                <Field label="Apelido">
+                  <Input
+                    required
+                    value={clientForm.name}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, name: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="CPF/CNPJ">
+                  <div className="flex gap-2">
+                    <Input
+                      value={clientForm.documentNumber}
+                      onChange={(event) =>
+                        setClientForm({ ...clientForm, documentNumber: event.target.value })
+                      }
+                    />
+                    <Button
+                      disabled={
+                        isCnpjLoading ||
+                        (clientForm.documentNumber?.replace(/\D/g, "").length ?? 0) !== 14
+                      }
+                      type="button"
+                      variant="outline"
+                      onClick={() => void onLookupCnpj()}
+                    >
+                      {isCnpjLoading ? "Consultando..." : "Consultar CNPJ"}
+                    </Button>
+                  </div>
+                </Field>
+                <Field label="Razão social">
+                  <Input
+                    value={clientForm.legalName}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, legalName: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Nome fantasia">
+                  <Input
+                    value={clientForm.tradeName}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, tradeName: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Tipo de cliente">
+                  <select
+                    className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                    value={clientForm.type}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, type: event.target.value as ClientType })
+                    }
+                  >
+                    {Object.entries(CLIENT_TYPE_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Status">
+                  <select
+                    className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                    value={clientForm.status}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, status: event.target.value as ClientStatus })
+                    }
+                  >
+                    {Object.entries(CLIENT_STATUS_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Regime tributário">
+                  <Input
+                    value={clientForm.taxRegime}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, taxRegime: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Data de abertura">
+                  <Input
+                    type="date"
+                    value={toDateInputValue(clientForm.openingDate)}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, openingDate: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Situação cadastral">
+                  <Input
+                    value={clientForm.registrationStatus}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, registrationStatus: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Inscrição estadual">
+                  <Input
+                    value={clientForm.stateRegistration}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, stateRegistration: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Porte">
+                  <Input
+                    value={clientForm.companySize}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, companySize: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Natureza jurídica">
+                  <Input
+                    value={clientForm.legalNature}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, legalNature: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Atividade principal">
+                  <Input
+                    value={clientForm.mainActivity}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, mainActivity: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="E-mail comercial">
+                  <Input
+                    type="email"
+                    value={clientForm.businessEmail}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, businessEmail: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Telefone comercial">
+                  <Input
+                    value={clientForm.businessPhone}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, businessPhone: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Logradouro">
+                  <Input
+                    value={clientForm.addressLine}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, addressLine: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Número">
+                  <Input
+                    value={clientForm.addressNumber}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, addressNumber: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Complemento">
+                  <Input
+                    value={clientForm.addressComplement}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, addressComplement: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Bairro">
+                  <Input
+                    value={clientForm.district}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, district: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Cidade">
+                  <Input
+                    value={clientForm.city}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, city: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="UF">
+                  <Input
+                    maxLength={2}
+                    value={clientForm.state}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, state: event.target.value.toUpperCase() })
+                    }
+                  />
+                </Field>
+                <Field label="CEP">
+                  <Input
+                    value={clientForm.zipCode}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, zipCode: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Responsável interno">
+                  <select
+                    className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                    value={clientForm.internalResponsibleId}
+                    onChange={(event) =>
+                      setClientForm({
+                        ...clientForm,
+                        internalResponsibleId: event.target.value
+                      })
+                    }
+                  >
+                    <option value="">Sem responsável</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Observações">
+                  <textarea
+                    className="min-h-24 w-full rounded-md border border-border bg-background p-3 text-sm outline-none"
+                    value={clientForm.notes}
+                    onChange={(event) =>
+                      setClientForm({ ...clientForm, notes: event.target.value })
+                    }
+                  />
+                </Field>
                 <Button disabled={isSaving} type="submit">
                   Salvar alterações
                 </Button>
@@ -793,6 +1005,21 @@ function SummaryCard({ title, value }: { title: string; value: string }) {
   );
 }
 
+function Field({
+  label,
+  children
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="grid gap-1 text-sm font-medium">
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}
+
 function SimpleTable({
   headers,
   rows,
@@ -842,4 +1069,24 @@ function cleanPayload<T extends Record<string, unknown>>(payload: T): T {
   return Object.fromEntries(
     Object.entries(payload).filter(([, value]) => value !== "")
   ) as T;
+}
+
+function toDateInputValue(value?: string | null) {
+  return value ? value.slice(0, 10) : "";
+}
+
+function appendNotes(current?: string, incoming?: string) {
+  if (!incoming) {
+    return current ?? "";
+  }
+
+  if (!current) {
+    return incoming;
+  }
+
+  if (current.includes(incoming)) {
+    return current;
+  }
+
+  return `${current.trim()}\n\n${incoming}`;
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { MeiPageClient } from "@/components/mei/mei-page-client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function MeiPage() {
   return (
@@ -14,22 +14,11 @@ export default function MeiPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/clientes">Ver clientes</Link>
+          <Link href="/clientes?type=MEI&new=1">Cadastrar cliente</Link>
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Clientes MEI</CardTitle>
-          <CardDescription>
-            Use esta area para centralizar a rotina operacional dos clientes MEI dentro do MVP.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          A listagem especifica de MEI pode ser conectada ao cadastro de clientes filtrando pelo
-          tipo MEI.
-        </CardContent>
-      </Card>
+      <MeiPageClient />
     </AppShell>
   );
 }

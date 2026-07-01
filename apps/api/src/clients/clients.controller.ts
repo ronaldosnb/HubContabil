@@ -38,6 +38,11 @@ export class ClientsController {
     return this.clientsService.create(dto, request.user.sub);
   }
 
+  @Get("cnpj/:cnpj")
+  lookupCnpj(@Param("cnpj") cnpj: string) {
+    return this.clientsService.lookupCnpj(cnpj);
+  }
+
   @Get(":id")
   get(@Param("id") id: string) {
     return this.clientsService.get(id);

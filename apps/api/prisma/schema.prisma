@@ -103,8 +103,25 @@ model Client {
   type                  ClientType
   name                  String
   legalName             String?
+  tradeName             String?
   documentNumber        String?
   taxRegime             String?
+  openingDate           DateTime?
+  registrationStatus    String?
+  stateRegistration     String?
+  companySize           String?
+  legalNature           String?
+  mainActivity          String?
+  addressLine           String?
+  addressNumber         String?
+  addressComplement     String?
+  district              String?
+  city                  String?
+  state                 String?
+  zipCode               String?
+  businessEmail         String?
+  businessPhone         String?
+  cnpjwsUpdatedAt       DateTime?
   status                ClientStatus   @default(ACTIVE)
   internalResponsibleId String?
   notes                 String?

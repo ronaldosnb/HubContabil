@@ -19,3 +19,6 @@ apps/api/storage/*
 .eslintcache
 .vercel/
 .DS_Store
+
+cnpjws.py
+.venv

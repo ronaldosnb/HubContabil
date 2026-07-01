@@ -1,0 +1,16 @@
+ALTER TABLE "Client" ADD COLUMN "tradeName" TEXT;
+ALTER TABLE "Client" ADD COLUMN "openingDate" TIMESTAMP(3);
+ALTER TABLE "Client" ADD COLUMN "registrationStatus" TEXT;
+ALTER TABLE "Client" ADD COLUMN "companySize" TEXT;
+ALTER TABLE "Client" ADD COLUMN "legalNature" TEXT;
+ALTER TABLE "Client" ADD COLUMN "mainActivity" TEXT;
+ALTER TABLE "Client" ADD COLUMN "addressLine" TEXT;
+ALTER TABLE "Client" ADD COLUMN "addressNumber" TEXT;
+ALTER TABLE "Client" ADD COLUMN "addressComplement" TEXT;
+ALTER TABLE "Client" ADD COLUMN "district" TEXT;
+ALTER TABLE "Client" ADD COLUMN "city" TEXT;
+ALTER TABLE "Client" ADD COLUMN "state" TEXT;
+ALTER TABLE "Client" ADD COLUMN "zipCode" TEXT;
+ALTER TABLE "Client" ADD COLUMN "businessEmail" TEXT;
+ALTER TABLE "Client" ADD COLUMN "businessPhone" TEXT;
+ALTER TABLE "Client" ADD COLUMN "cnpjwsUpdatedAt" TIMESTAMP(3);

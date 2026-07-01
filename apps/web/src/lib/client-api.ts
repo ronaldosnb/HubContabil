@@ -235,8 +235,25 @@ export type ClientListItem = {
   type: ClientType;
   name: string;
   legalName?: string | null;
+  tradeName?: string | null;
   documentNumber?: string | null;
   taxRegime?: string | null;
+  openingDate?: string | null;
+  registrationStatus?: string | null;
+  stateRegistration?: string | null;
+  companySize?: string | null;
+  legalNature?: string | null;
+  mainActivity?: string | null;
+  addressLine?: string | null;
+  addressNumber?: string | null;
+  addressComplement?: string | null;
+  district?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
+  businessEmail?: string | null;
+  businessPhone?: string | null;
+  cnpjwsUpdatedAt?: string | null;
   status: ClientStatus;
   internalResponsible?: Pick<AuthUser, "id" | "name" | "email"> | null;
   contacts: ClientContact[];
@@ -286,12 +303,34 @@ export type CreateClientPayload = {
   type: ClientType;
   name: string;
   legalName?: string;
+  tradeName?: string;
   documentNumber?: string;
   taxRegime?: string;
+  openingDate?: string;
+  registrationStatus?: string;
+  stateRegistration?: string;
+  companySize?: string;
+  legalNature?: string;
+  mainActivity?: string;
+  addressLine?: string;
+  addressNumber?: string;
+  addressComplement?: string;
+  district?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  businessEmail?: string;
+  businessPhone?: string;
+  cnpjwsUpdatedAt?: string;
   status?: ClientStatus;
   internalResponsibleId?: string;
   notes?: string;
 };
+
+export type CnpjLookupResult = Omit<
+  CreateClientPayload,
+  "status" | "internalResponsibleId"
+>;
 
 export type CreateContactPayload = {
   name: string;
@@ -402,6 +441,10 @@ export async function createClient(payload: CreateClientPayload) {
     method: "POST",
     body: JSON.stringify(payload)
   });
+}
+
+export async function lookupClientByCnpj(cnpj: string) {
+  return request<CnpjLookupResult>(`/clients/cnpj/${cnpj.replace(/\D/g, "")}`);
 }
 
 export async function updateClient(id: string, payload: Partial<CreateClientPayload>) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   CLIENT_STATUS_LABELS,
@@ -15,7 +15,8 @@ import {
   createClient,
   getToken,
   listClients,
-  listUsers
+  listUsers,
+  lookupClientByCnpj
 } from "@/lib/client-api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,26 +27,48 @@ const initialForm: CreateClientPayload = {
   type: ClientType.COMPANY,
   name: "",
   legalName: "",
+  tradeName: "",
   documentNumber: "",
   taxRegime: "",
+  openingDate: "",
+  registrationStatus: "",
+  stateRegistration: "",
+  companySize: "",
+  legalNature: "",
+  mainActivity: "",
+  addressLine: "",
+  addressNumber: "",
+  addressComplement: "",
+  district: "",
+  city: "",
+  state: "",
+  zipCode: "",
+  businessEmail: "",
+  businessPhone: "",
+  cnpjwsUpdatedAt: "",
   status: ClientStatus.ACTIVE,
   internalResponsibleId: "",
   notes: ""
 };
 
 export function ClientsPageClient() {
+  const initialType = getInitialClientType();
   const [clients, setClients] = useState<ClientListItem[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [filters, setFilters] = useState({
     search: "",
     status: "",
-    type: "",
+    type: initialType ?? "",
     responsibleUserId: ""
   });
-  const [form, setForm] = useState<CreateClientPayload>(initialForm);
-  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<CreateClientPayload>({
+    ...initialForm,
+    type: initialType ?? initialForm.type
+  });
+  const [showForm, setShowForm] = useState(shouldOpenNewClientForm());
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCnpjLoading, setIsCnpjLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const params = useMemo(() => {
@@ -92,13 +115,45 @@ export function ClientsPageClient() {
 
     try {
       await createClient(cleanPayload(form));
-      setForm(initialForm);
+      setForm({
+        ...initialForm,
+        type: initialType ?? initialForm.type
+      });
       setShowForm(false);
       await load();
     } catch (error) {
       setError(error instanceof Error ? error.message : "Erro ao criar cliente.");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function onLookupCnpj() {
+    const cnpj = form.documentNumber?.replace(/\D/g, "") ?? "";
+
+    if (cnpj.length !== 14) {
+      setError("Informe um CNPJ com 14 dígitos para consultar.");
+      return;
+    }
+
+    setIsCnpjLoading(true);
+    setError(null);
+
+    try {
+      const data = await lookupClientByCnpj(cnpj);
+      setForm((current) => ({
+        ...current,
+        ...data,
+        name: current.name || data.tradeName || data.legalName || data.name,
+        documentNumber: data.documentNumber,
+        status: current.status,
+        internalResponsibleId: current.internalResponsibleId,
+        notes: appendNotes(current.notes, data.notes)
+      }));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Erro ao consultar CNPJ.");
+    } finally {
+      setIsCnpjLoading(false);
     }
   }
 
@@ -159,73 +214,198 @@ export function ClientsPageClient() {
       {showForm ? (
         <Card className="p-5">
           <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-            <Input
-              placeholder="Nome"
-              required
-              value={form.name}
-              onChange={(event) => setForm({ ...form, name: event.target.value })}
-            />
-            <Input
-              placeholder="Razão social"
-              value={form.legalName}
-              onChange={(event) => setForm({ ...form, legalName: event.target.value })}
-            />
-            <Input
-              placeholder="CPF/CNPJ"
-              value={form.documentNumber}
-              onChange={(event) => setForm({ ...form, documentNumber: event.target.value })}
-            />
-            <Input
-              placeholder="Regime tributário"
-              value={form.taxRegime}
-              onChange={(event) => setForm({ ...form, taxRegime: event.target.value })}
-            />
-            <select
-              className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-              value={form.type}
-              onChange={(event) =>
-                setForm({ ...form, type: event.target.value as ClientType })
-              }
-            >
-              {Object.entries(CLIENT_TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <select
-              className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-              value={form.status}
-              onChange={(event) =>
-                setForm({ ...form, status: event.target.value as ClientStatus })
-              }
-            >
-              {Object.entries(CLIENT_STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <select
-              className="h-10 rounded-md border border-border bg-background px-3 text-sm md:col-span-2"
-              value={form.internalResponsibleId}
-              onChange={(event) =>
-                setForm({ ...form, internalResponsibleId: event.target.value })
-              }
-            >
-              <option value="">Sem responsável interno</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-            <textarea
-              className="min-h-24 rounded-md border border-border bg-background p-3 text-sm outline-none md:col-span-2"
-              placeholder="Observações"
-              value={form.notes}
-              onChange={(event) => setForm({ ...form, notes: event.target.value })}
-            />
+            <Field label="Apelido">
+              <Input
+                placeholder="Nome curto usado internamente"
+                required
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+              />
+            </Field>
+            <Field label="CPF/CNPJ">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Somente números ou formatado"
+                  value={form.documentNumber}
+                  onChange={(event) => setForm({ ...form, documentNumber: event.target.value })}
+                />
+                <Button
+                  disabled={isCnpjLoading || (form.documentNumber?.replace(/\D/g, "").length ?? 0) !== 14}
+                  type="button"
+                  variant="outline"
+                  onClick={() => void onLookupCnpj()}
+                >
+                  {isCnpjLoading ? "Consultando..." : "Consultar CNPJ"}
+                </Button>
+              </div>
+            </Field>
+            <Field label="Razão social">
+              <Input
+                placeholder="Razão social"
+                value={form.legalName}
+                onChange={(event) => setForm({ ...form, legalName: event.target.value })}
+              />
+            </Field>
+            <Field label="Nome fantasia">
+              <Input
+                placeholder="Nome fantasia"
+                value={form.tradeName}
+                onChange={(event) => setForm({ ...form, tradeName: event.target.value })}
+              />
+            </Field>
+            <Field label="Tipo de cliente">
+              <select
+                className="h-10 rounded-md border border-border bg-background px-3 text-sm"
+                value={form.type}
+                onChange={(event) =>
+                  setForm({ ...form, type: event.target.value as ClientType })
+                }
+              >
+                {Object.entries(CLIENT_TYPE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Status">
+              <select
+                className="h-10 rounded-md border border-border bg-background px-3 text-sm"
+                value={form.status}
+                onChange={(event) =>
+                  setForm({ ...form, status: event.target.value as ClientStatus })
+                }
+              >
+                {Object.entries(CLIENT_STATUS_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Regime tributário">
+              <Input
+                placeholder="Ex.: Simples Nacional"
+                value={form.taxRegime}
+                onChange={(event) => setForm({ ...form, taxRegime: event.target.value })}
+              />
+            </Field>
+            <Field label="Data de abertura">
+              <Input
+                type="date"
+                value={toDateInputValue(form.openingDate)}
+                onChange={(event) => setForm({ ...form, openingDate: event.target.value })}
+              />
+            </Field>
+            <Field label="Situação cadastral">
+              <Input
+                value={form.registrationStatus}
+                onChange={(event) => setForm({ ...form, registrationStatus: event.target.value })}
+              />
+            </Field>
+            <Field label="Inscrição estadual">
+              <Input
+                value={form.stateRegistration}
+                onChange={(event) => setForm({ ...form, stateRegistration: event.target.value })}
+              />
+            </Field>
+            <Field label="Porte">
+              <Input
+                value={form.companySize}
+                onChange={(event) => setForm({ ...form, companySize: event.target.value })}
+              />
+            </Field>
+            <Field label="Natureza jurídica">
+              <Input
+                value={form.legalNature}
+                onChange={(event) => setForm({ ...form, legalNature: event.target.value })}
+              />
+            </Field>
+            <Field label="Atividade principal">
+              <Input
+                value={form.mainActivity}
+                onChange={(event) => setForm({ ...form, mainActivity: event.target.value })}
+              />
+            </Field>
+            <Field label="E-mail comercial">
+              <Input
+                type="email"
+                value={form.businessEmail}
+                onChange={(event) => setForm({ ...form, businessEmail: event.target.value })}
+              />
+            </Field>
+            <Field label="Telefone comercial">
+              <Input
+                value={form.businessPhone}
+                onChange={(event) => setForm({ ...form, businessPhone: event.target.value })}
+              />
+            </Field>
+            <Field label="Logradouro">
+              <Input
+                value={form.addressLine}
+                onChange={(event) => setForm({ ...form, addressLine: event.target.value })}
+              />
+            </Field>
+            <Field label="Número">
+              <Input
+                value={form.addressNumber}
+                onChange={(event) => setForm({ ...form, addressNumber: event.target.value })}
+              />
+            </Field>
+            <Field label="Complemento">
+              <Input
+                value={form.addressComplement}
+                onChange={(event) => setForm({ ...form, addressComplement: event.target.value })}
+              />
+            </Field>
+            <Field label="Bairro">
+              <Input
+                value={form.district}
+                onChange={(event) => setForm({ ...form, district: event.target.value })}
+              />
+            </Field>
+            <Field label="Cidade">
+              <Input
+                value={form.city}
+                onChange={(event) => setForm({ ...form, city: event.target.value })}
+              />
+            </Field>
+            <Field label="UF">
+              <Input
+                maxLength={2}
+                value={form.state}
+                onChange={(event) => setForm({ ...form, state: event.target.value.toUpperCase() })}
+              />
+            </Field>
+            <Field label="CEP">
+              <Input
+                value={form.zipCode}
+                onChange={(event) => setForm({ ...form, zipCode: event.target.value })}
+              />
+            </Field>
+            <Field className="md:col-span-2" label="Responsável interno">
+              <select
+                className="h-10 rounded-md border border-border bg-background px-3 text-sm"
+                value={form.internalResponsibleId}
+                onChange={(event) =>
+                  setForm({ ...form, internalResponsibleId: event.target.value })
+                }
+              >
+                <option value="">Sem responsável interno</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field className="md:col-span-2" label="Observações">
+              <textarea
+                className="min-h-24 rounded-md border border-border bg-background p-3 text-sm outline-none"
+                value={form.notes}
+                onChange={(event) => setForm({ ...form, notes: event.target.value })}
+              />
+            </Field>
             <Button className="md:col-span-2" disabled={isSaving} type="submit">
               {isSaving ? "Salvando..." : "Salvar cliente"}
             </Button>
@@ -247,7 +427,7 @@ export function ClientsPageClient() {
           <thead className="bg-muted text-muted-foreground">
             <tr>
               {[
-                "Nome",
+                "Apelido",
                 "CPF/CNPJ",
                 "Tipo",
                 "Status",
@@ -314,4 +494,59 @@ function cleanPayload(payload: CreateClientPayload): CreateClientPayload {
   return Object.fromEntries(
     Object.entries(payload).filter(([, value]) => value !== "")
   ) as CreateClientPayload;
+}
+
+function getInitialClientType() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const type = new URLSearchParams(window.location.search).get("type");
+
+  return Object.values(ClientType).includes(type as ClientType) ? (type as ClientType) : null;
+}
+
+function shouldOpenNewClientForm() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return new URLSearchParams(window.location.search).get("new") === "1";
+}
+
+function Field({
+  label,
+  children,
+  className = ""
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <label className={`grid gap-1 text-sm font-medium ${className}`}>
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function toDateInputValue(value?: string | null) {
+  return value ? value.slice(0, 10) : "";
+}
+
+function appendNotes(current?: string, incoming?: string) {
+  if (!incoming) {
+    return current ?? "";
+  }
+
+  if (!current) {
+    return incoming;
+  }
+
+  if (current.includes(incoming)) {
+    return current;
+  }
+
+  return `${current.trim()}\n\n${incoming}`;
 }
