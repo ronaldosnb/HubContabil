@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   FileText,
@@ -8,21 +11,45 @@ import {
   Settings,
   Users
 } from "lucide-react";
+import { UserRole } from "@hubcontabil/shared";
 import { SidebarAccountActions } from "@/components/sidebar-account-actions";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AuthUser, getCurrentUser, getToken } from "@/lib/client-api";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: BarChart3 },
-  { href: "/kanban", label: "Kanban", icon: KanbanSquare },
-  { href: "/clientes", label: "Clientes", icon: Users },
-  { href: "/documentos", label: "Documentos", icon: FileText },
-  { href: "/envios", label: "Envios", icon: Send },
-  { href: "/tarefas-recorrentes", label: "Tarefas recorrentes", icon: Repeat },
-  { href: "/usuarios", label: "Usuarios", icon: Users },
-  { href: "/configuracoes", label: "Configuracoes", icon: Settings }
+  { href: "/", label: "Dashboard", icon: BarChart3, adminOnly: false },
+  { href: "/kanban", label: "Kanban", icon: KanbanSquare, adminOnly: false },
+  { href: "/clientes", label: "Clientes", icon: Users, adminOnly: false },
+  { href: "/documentos", label: "Documentos", icon: FileText, adminOnly: false },
+  { href: "/envios", label: "Envios", icon: Send, adminOnly: false },
+  { href: "/tarefas-recorrentes", label: "Tarefas recorrentes", icon: Repeat, adminOnly: false },
+  { href: "/usuarios", label: "Usuarios", icon: Users, adminOnly: true },
+  { href: "/configuracoes", label: "Configuracoes", icon: Settings, adminOnly: true }
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    async function loadUser() {
+      if (!getToken()) {
+        return;
+      }
+
+      try {
+        setUser(await getCurrentUser());
+      } catch {
+        setUser(null);
+      }
+    }
+
+    void loadUser();
+  }, []);
+
+  const visibleNavItems = navItems.filter(
+    (item) => !item.adminOnly || user?.role === UserRole.ADMIN
+  );
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-border bg-card lg:flex lg:flex-col">
@@ -31,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <p className="text-sm text-muted-foreground">Operacao interna</p>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}

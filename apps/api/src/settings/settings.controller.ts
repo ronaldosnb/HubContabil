@@ -7,17 +7,17 @@ import { SettingsService } from "./settings.service";
 import { UpdateSettingsDto } from "./settings.dto";
 
 @Controller("settings")
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get()
+  @Roles(UserRole.ADMIN)
   get() {
     return this.settingsService.get();
   }
 
   @Patch()
-  @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   update(@Body() dto: UpdateSettingsDto) {
     return this.settingsService.update(dto);

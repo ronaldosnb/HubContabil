@@ -373,6 +373,10 @@ export async function login(email: string, password: string) {
   });
 }
 
+export async function getCurrentUser() {
+  return request<AuthUser>("/auth/me");
+}
+
 export async function listClients(params: URLSearchParams) {
   const query = params.toString();
   return request<ClientListItem[]>(`/clients${query ? `?${query}` : ""}`);
