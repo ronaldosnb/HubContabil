@@ -21,6 +21,7 @@ export type AuthUser = {
   name: string;
   email: string;
   role: UserRole;
+  departments?: DepartmentOption[];
 };
 
 export type UserOption = AuthUser;
@@ -29,6 +30,7 @@ export type ManagedUser = AuthUser & {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  departments: DepartmentOption[];
 };
 
 export type ServiceOption = {
@@ -459,6 +461,7 @@ export async function createUser(payload: {
   password: string;
   role: UserRole;
   isActive?: boolean;
+  departmentIds?: string[];
 }) {
   return request<ManagedUser>("/users", {
     method: "POST",
@@ -474,6 +477,7 @@ export async function updateUser(
     password: string;
     role: UserRole;
     isActive: boolean;
+    departmentIds: string[];
   }>
 ) {
   return request<ManagedUser>(`/users/${id}`, {

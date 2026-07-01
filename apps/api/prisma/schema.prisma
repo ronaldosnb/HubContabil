@@ -94,6 +94,7 @@ model User {
   responsibleTasks      Task[]         @relation("TaskResponsible")
   createdTasks          Task[]         @relation("TaskCreator")
   responsibleRecurrences RecurringTask[] @relation("RecurringTaskResponsible")
+  departments           UserDepartment[]
   activityLogs          ActivityLog[]
 }
 
@@ -173,6 +174,19 @@ model Department {
   isActive       Boolean         @default(true)
   tasks          Task[]
   recurringTasks RecurringTask[]
+  users          UserDepartment[]
+}
+
+model UserDepartment {
+  userId       String
+  departmentId String
+  assignedAt   DateTime @default(now())
+
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, departmentId])
+  @@index([departmentId])
 }
 
 model Document {
