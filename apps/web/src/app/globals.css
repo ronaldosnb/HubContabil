@@ -24,6 +24,7 @@
 }
 
 :root {
+  color-scheme: light;
   --background: #f6f8fb;
   --foreground: #172033;
   --card: #ffffff;
@@ -44,6 +45,28 @@
   --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
   --kanban-column-bg: #eef2f7;
   --kanban-card-bg: #ffffff;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #081827;
+  --foreground: #e8edf4;
+  --card: #102236;
+  --card-foreground: #e8edf4;
+  --primary: #8fb8e8;
+  --primary-foreground: #071421;
+  --secondary: #18324d;
+  --secondary-foreground: #e8edf4;
+  --muted: #14283e;
+  --muted-foreground: #a7b4c7;
+  --border: #25415f;
+  --ring: #8fb8e8;
+  --success: #6ee7a2;
+  --warning: #f8c46b;
+  --danger: #f28b8b;
+  --info: #7dd3fc;
+  --kanban-column-bg: #0d2034;
+  --kanban-card-bg: #102236;
 }
 
 * {

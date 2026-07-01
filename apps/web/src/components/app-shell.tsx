@@ -8,6 +8,8 @@ import {
   Settings,
   Users
 } from "lucide-react";
+import { SidebarAccountActions } from "@/components/sidebar-account-actions";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
@@ -16,19 +18,19 @@ const navItems = [
   { href: "/documentos", label: "Documentos", icon: FileText },
   { href: "/envios", label: "Envios", icon: Send },
   { href: "/tarefas-recorrentes", label: "Tarefas recorrentes", icon: Repeat },
-  { href: "/usuarios", label: "Usuários", icon: Users },
-  { href: "/configuracoes", label: "Configurações", icon: Settings }
+  { href: "/usuarios", label: "Usuarios", icon: Users },
+  { href: "/configuracoes", label: "Configuracoes", icon: Settings }
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-border bg-card lg:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-border bg-card lg:flex lg:flex-col">
         <div className="border-b border-border px-6 py-5">
           <p className="text-lg font-semibold text-primary">HubContabil</p>
-          <p className="text-sm text-muted-foreground">Operação interna</p>
+          <p className="text-sm text-muted-foreground">Operacao interna</p>
         </div>
-        <nav className="space-y-1 p-3">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -40,17 +42,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
+        <div className="space-y-2 border-t border-border p-3">
+          <ThemeToggle className="w-full justify-start" />
+          <SidebarAccountActions />
+        </div>
       </aside>
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur lg:px-8">
-          <div>
-            <p className="text-sm font-medium">Escritório</p>
-            <p className="text-xs text-muted-foreground">Ambiente interno do MVP</p>
-          </div>
-          <Link href="/login" className="text-sm font-medium text-primary">
-            Entrar
-          </Link>
-        </header>
         <main className="px-4 py-6 lg:px-8">{children}</main>
       </div>
     </div>
