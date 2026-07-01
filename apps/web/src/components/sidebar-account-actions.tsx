@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogOut, UserCircle } from "lucide-react";
 import { clearToken } from "@/lib/client-api";
@@ -15,9 +16,11 @@ export function SidebarAccountActions() {
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      <Button type="button" variant="outline" className="justify-start" title="Perfil">
-        <UserCircle className="h-4 w-4" />
-        Perfil
+      <Button asChild variant="outline" className="justify-start" title="Perfil">
+        <Link href="/perfil">
+          <UserCircle className="h-4 w-4" />
+          Perfil
+        </Link>
       </Button>
       <Button
         type="button"

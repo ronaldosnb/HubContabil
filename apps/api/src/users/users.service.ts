@@ -159,6 +159,26 @@ export class UsersService {
     }
   }
 
+  async updateProfile(id: string, dto: { name?: string; email?: string; password?: string }) {
+    const passwordHash = dto.password ? await hash(dto.password, 12) : undefined;
+
+    try {
+      const user = await this.prisma.user.update({
+        where: { id },
+        data: {
+          name: dto.name,
+          email: dto.email,
+          passwordHash
+        },
+        select: this.userSelect
+      });
+
+      return this.presentUser(user);
+    } catch (error) {
+      this.handleKnownError(error);
+    }
+  }
+
   private presentUser<T extends SelectedUser>(user: T) {
     return {
       ...user,

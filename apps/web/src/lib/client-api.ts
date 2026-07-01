@@ -377,6 +377,17 @@ export async function getCurrentUser() {
   return request<AuthUser>("/auth/me");
 }
 
+export async function updateCurrentUser(payload: {
+  name?: string;
+  email?: string;
+  password?: string;
+}) {
+  return request<AuthUser>("/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
 export async function listClients(params: URLSearchParams) {
   const query = params.toString();
   return request<ClientListItem[]>(`/clients${query ? `?${query}` : ""}`);
