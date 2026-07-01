@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   BarChart3,
+  Building2,
   FileText,
   KanbanSquare,
   Repeat,
@@ -19,7 +20,8 @@ import { AuthUser, getCurrentUser, getToken } from "@/lib/client-api";
 const navItems = [
   { href: "/", label: "Dashboard", icon: BarChart3, adminOnly: false },
   { href: "/kanban", label: "Kanban", icon: KanbanSquare, adminOnly: false },
-  { href: "/clientes", label: "Clientes", icon: Users, adminOnly: false },
+  { href: "/clientes", label: "Clientes", icon: Building2, adminOnly: false },
+  { href: "/mei", label: "MEI", icon: Users, adminOnly: false },
   { href: "/documentos", label: "Documentos", icon: FileText, adminOnly: false },
   { href: "/envios", label: "Envios", icon: Send, adminOnly: false },
   { href: "/tarefas-recorrentes", label: "Tarefas recorrentes", icon: Repeat, adminOnly: false },
