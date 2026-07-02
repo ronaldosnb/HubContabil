@@ -788,3 +788,33 @@ export async function generateRecurringTask(id: string) {
     method: "POST"
   });
 }
+
+// ── MEI / DAS ────────────────────────────────────────────────────────────────
+
+export type LatestDasItem = {
+  id: string;
+  title: string;
+  competence: string | null;
+  createdAt: string;
+  originalFileName: string;
+};
+
+export async function emitDasForClient(clientId: string) {
+  return request<{ queued: boolean; clientName: string }>(`/mei/emit-das/${clientId}`, {
+    method: "POST"
+  });
+}
+
+export async function emitDasForAll() {
+  return request<{ queued: boolean; count: number }>("/mei/emit-das", { method: "POST" });
+}
+
+export async function getLatestDas(clientId: string) {
+  return request<LatestDasItem | null>(`/mei/das/${clientId}/latest`);
+}
+
+export async function getAllLatestDas() {
+  return request<{ clientId: string; clientName: string; documentId: string; title: string }[]>(
+    "/mei/das/latest-all"
+  );
+}

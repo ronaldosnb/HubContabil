@@ -115,5 +115,6 @@ export const INITIAL_SERVICES = [
 export const QUEUE_NAMES = {
   EMAIL_SEND: "email-send",
   WHATSAPP_SEND: "whatsapp-send",
-  RECURRING_TASKS: "recurring-tasks"
+  RECURRING_TASKS: "recurring-tasks",
+  DAS_EMIT: "das-emit"
 } as const;

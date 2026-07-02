@@ -5,7 +5,8 @@
     "rootDir": "src",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "lib": ["ES2022", "DOM"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

@@ -1,9 +1,12 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { readFile } from "fs/promises";
+import { readFile, stat, unlink } from "fs/promises";
+import { mkdirSync } from "fs";
+import { tmpdir } from "os";
 import { basename, isAbsolute, join, normalize } from "path";
 import {
   DocumentSendStatus,
+  DocumentStatus,
   SendChannelStatus,
   TaskStatus
 } from "@prisma/client";
@@ -11,9 +14,16 @@ import { ConnectionOptions, Job, Worker } from "bullmq";
 import { Resend } from "resend";
 import { QUEUE_NAMES } from "@hubcontabil/shared";
 import { PrismaWorkerService } from "./worker-prisma.service";
+import { emitDasRpa, buildPaValue } from "./das-rpa";
 
 type SendJobData = {
   documentSendChannelId: string;
+};
+
+type DasEmitJobData = {
+  clientId: string;
+  cnpj: string;
+  triggeredByUserId: string;
 };
 
 type WorkerSettings = {
@@ -57,6 +67,10 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
       }),
       new Worker(QUEUE_NAMES.RECURRING_TASKS, () => this.processRecurringTasks(), {
         connection: this.connection
+      }),
+      new Worker(QUEUE_NAMES.DAS_EMIT, (job) => this.processDasEmit(job), {
+        connection: this.connection,
+        concurrency: 1
       })
     ];
 
@@ -207,6 +221,60 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
       }
     });
     await this.refreshDocumentSendStatus(channel.documentSendId);
+  }
+
+  private async processDasEmit(job: Job<DasEmitJobData>) {
+    const { clientId, cnpj, triggeredByUserId } = job.data;
+    this.logger.log(`Emitindo DAS para cliente ${clientId} (CNPJ: ${cnpj})`);
+
+    const paValue = buildPaValue();
+    const storageRoot = this.config.get<string>("STORAGE_ROOT", "./storage");
+    const now = new Date();
+    const year = String(now.getFullYear());
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+
+    const tempDir = join(storageRoot, "tmp-das");
+    mkdirSync(tempDir, { recursive: true });
+
+    const pdfPath = await emitDasRpa({
+      cnpj,
+      downloadDir: tempDir,
+      paValue,
+      capsolverApiKey: this.config.get<string>("CAPSOLVER_API_KEY"),
+    });
+
+    const fileBuffer = await readFile(pdfPath);
+    const originalFileName = `das_${cnpj}_${paValue}.pdf`;
+    const storedFileName = `das_${cnpj}_${paValue}_${Date.now()}.pdf`;
+    const relativeDir = join("clients", clientId, "documents", year, month);
+    const storagePath = join(relativeDir, storedFileName);
+    const absoluteDir = join(storageRoot, relativeDir);
+
+    mkdirSync(absoluteDir, { recursive: true });
+    const { writeFile } = await import("fs/promises");
+    await writeFile(join(storageRoot, storagePath), fileBuffer);
+
+    // Remove arquivo temporário
+    await unlink(pdfPath).catch(() => {});
+
+    await this.prisma.document.create({
+      data: {
+        clientId,
+        uploadedByUserId: triggeredByUserId,
+        category: "Guias de impostos",
+        title: `DAS ${paValue.slice(4, 6)}/${paValue.slice(0, 4)}`,
+        description: `Guia DAS emitida automaticamente pelo RPA — competência ${paValue.slice(4, 6)}/${paValue.slice(0, 4)}.`,
+        originalFileName,
+        storedFileName,
+        storagePath,
+        mimeType: "application/pdf",
+        size: fileBuffer.length,
+        competence: `${paValue.slice(0, 4)}-${paValue.slice(4, 6)}`,
+        status: DocumentStatus.PENDING,
+      },
+    });
+
+    this.logger.log(`DAS do cliente ${clientId} salva com sucesso em ${storagePath}`);
   }
 
   private async processRecurringTasks() {

@@ -3,14 +3,25 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CLIENT_STATUS_LABELS, ClientStatus, ClientType } from "@hubcontabil/shared";
-import { ClientListItem, getToken, listClients } from "@/lib/client-api";
+import {
+  ClientListItem,
+  emitDasForClient,
+  getLatestDas,
+  getDocumentDownloadUrl,
+  getToken,
+  listClients,
+} from "@/lib/client-api";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+
+type DasRowState = "idle" | "emitting" | "done" | "error" | "downloading";
 
 export function MeiPageClient() {
   const [clients, setClients] = useState<ClientListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rowState, setRowState] = useState<Record<string, DasRowState>>({});
 
   useEffect(() => {
     async function load() {
@@ -26,8 +37,8 @@ export function MeiPageClient() {
       try {
         const params = new URLSearchParams({ type: ClientType.MEI });
         setClients(await listClients(params));
-      } catch (error) {
-        setError(error instanceof Error ? error.message : "Erro ao carregar clientes MEI.");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erro ao carregar clientes MEI.");
       } finally {
         setIsLoading(false);
       }
@@ -35,6 +46,36 @@ export function MeiPageClient() {
 
     void load();
   }, []);
+
+  function setClientState(clientId: string, state: DasRowState) {
+    setRowState((prev) => ({ ...prev, [clientId]: state }));
+  }
+
+  async function handleEmit(clientId: string) {
+    setClientState(clientId, "emitting");
+    try {
+      await emitDasForClient(clientId);
+      setClientState(clientId, "done");
+    } catch {
+      setClientState(clientId, "error");
+    }
+  }
+
+  async function handleDownload(clientId: string) {
+    setClientState(clientId, "downloading");
+    try {
+      const latest = await getLatestDas(clientId);
+      if (!latest) {
+        alert("Nenhuma DAS encontrada para este cliente. Emita primeiro.");
+        setClientState(clientId, "idle");
+        return;
+      }
+      window.open(getDocumentDownloadUrl(latest.id), "_blank");
+      setClientState(clientId, "idle");
+    } catch {
+      setClientState(clientId, "error");
+    }
+  }
 
   if (error) {
     return <Card className="p-5 text-sm text-danger">{error}</Card>;
@@ -45,7 +86,7 @@ export function MeiPageClient() {
       <table className="w-full text-left text-sm">
         <thead className="bg-muted text-muted-foreground">
           <tr>
-            {["Apelido", "CPF/CNPJ", "Status", "Responsável", "Contato", "Tarefas", "Documentos", "Ação"].map(
+            {["Apelido", "CPF/CNPJ", "Status", "Responsável", "Contato", "Tarefas", "Documentos", "Ações"].map(
               (heading) => (
                 <th key={heading} className="px-4 py-3 font-medium">
                   {heading}
@@ -69,7 +110,8 @@ export function MeiPageClient() {
             </tr>
           ) : (
             clients.map((client) => {
-              const mainContact = client.contacts.find((contact) => contact.isMain);
+              const mainContact = client.contacts.find((c) => c.isMain);
+              const state = rowState[client.id] ?? "idle";
 
               return (
                 <tr key={client.id} className="border-t border-border">
@@ -85,9 +127,27 @@ export function MeiPageClient() {
                   <td className="px-4 py-3">{client._count.tasks}</td>
                   <td className="px-4 py-3">{client._count.documents}</td>
                   <td className="px-4 py-3">
-                    <Link className="font-medium text-primary" href={`/clientes/${client.id}`}>
-                      Abrir
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link className="font-medium text-primary text-sm" href={`/clientes/${client.id}`}>
+                        Abrir
+                      </Link>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={state === "emitting"}
+                        onClick={() => void handleEmit(client.id)}
+                      >
+                        {state === "emitting" ? "Emitindo..." : state === "done" ? "Emitida ✓" : "Emitir DAS"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={state === "downloading"}
+                        onClick={() => void handleDownload(client.id)}
+                      >
+                        {state === "downloading" ? "Buscando..." : "Baixar DAS"}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               );

@@ -9,6 +9,7 @@ import { DocumentsModule } from "./documents/documents.module";
 import { DocumentSendsModule } from "./document-sends/document-sends.module";
 import { HealthModule } from "./health/health.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { MeiModule } from "./mei/mei.module";
 import { RecurringTasksModule } from "./recurring-tasks/recurring-tasks.module";
 import { ServicesModule } from "./services/services.module";
 import { SettingsModule } from "./settings/settings.module";
@@ -36,6 +37,7 @@ import { UsersModule } from "./users/users.module";
     HealthModule,
     DashboardModule,
     ClientsModule,
+    MeiModule,
     DocumentsModule,
     DocumentSendsModule,
     DepartmentsModule,
