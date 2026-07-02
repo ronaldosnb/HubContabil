@@ -195,7 +195,8 @@ async function main() {
 
   const now = new Date();
   const currentYear = now.getFullYear().toString();
-  const currentMonth = (now.getMonth() + 1).toString(); // 1–12
+  const currentMonth = String(now.getMonth() + 1).padStart(2, "0"); // "01"–"12"
+  const paValue = `${currentYear}${currentMonth}`; // ex: "202607"
 
   log(`Iniciando emissão de DAS — CNPJ: ${CNPJ} | Competência: ${currentMonth}/${currentYear}`);
   log(CAPSOLVER_API_KEY ? "Modo: resolução automática de captcha (CapSolver)" : "Modo: resolução manual de captcha");
@@ -329,6 +330,16 @@ async function main() {
   await page.waitForLoadState("domcontentloaded", { timeout: 30_000 });
 
   log("✅ Ano selecionado e página avançada!");
+
+  // ── Passo 6: Marcar o checkbox do mês atual ───────────────────────────────
+  log(`Passo 6 — Selecionando checkbox do mês ${currentMonth}/${currentYear} (PA: ${paValue})...`);
+
+  // Aguarda a tabela carregar com os checkboxes de PA
+  const checkbox = page.locator(`input.paSelecionado[value="${paValue}"]`);
+  await checkbox.waitFor({ state: "visible", timeout: 15_000 });
+  await checkbox.click();
+
+  log(`✅ Mês ${currentMonth}/${currentYear} selecionado!`);
   log("👀 Navegador mantido aberto. Pressione Ctrl+C para encerrar.");
 
   // Mantém o navegador aberto indefinidamente
