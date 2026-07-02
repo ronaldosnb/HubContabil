@@ -114,24 +114,7 @@ async function handleHCaptchaIfPresent(page: Page): Promise<void> {
   log("⚠️  hCaptcha detectado na página!");
 
   if (!CAPSOLVER_API_KEY) {
-    log("──────────────────────────────────────────────────────────────");
-    log("RESOLUÇÃO MANUAL: resolva o captcha no navegador.");
-    log("Dica: defina CAPSOLVER_API_KEY para resolução automática.");
-    log("Aguardando até 3 minutos...");
-    log("──────────────────────────────────────────────────────────────");
-
-    // Aguarda o captcha sumir (usuário resolve manualmente)
-    await page
-      .waitForFunction(
-        () =>
-          !document.querySelector("[data-sitekey]") &&
-          !document.querySelector("iframe[src*='hcaptcha']"),
-        { timeout: 180_000 }
-      )
-      .catch(() => {
-        log("Tempo esgotado aguardando resolução manual. Continuando...");
-      });
-
+    log("hCaptcha detectado mas CAPSOLVER_API_KEY não definida — continuando sem resolver.");
     return;
   }
 
@@ -194,11 +177,15 @@ async function main() {
   }
 
   const now = new Date();
-  const currentYear = now.getFullYear().toString();
-  const currentMonth = String(now.getMonth() + 1).padStart(2, "0"); // "01"–"12"
-  const paValue = `${currentYear}${currentMonth}`; // ex: "202607"
 
-  log(`Iniciando emissão de DAS — CNPJ: ${CNPJ} | Competência: ${currentMonth}/${currentYear}`);
+  // Competência = mês anterior (DAS de junho emitida em julho, etc.)
+  // Se for janeiro, volta para dezembro do ano anterior
+  const paDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const paYear = String(paDate.getFullYear());
+  const paMonth = String(paDate.getMonth() + 1).padStart(2, "0"); // "01"–"12"
+  const paValue = `${paYear}${paMonth}`; // ex: "202606"
+
+  log(`Iniciando emissão de DAS — CNPJ: ${CNPJ} | Competência: ${paMonth}/${paYear}`);
   log(CAPSOLVER_API_KEY ? "Modo: resolução automática de captcha (CapSolver)" : "Modo: resolução manual de captcha");
 
   const browser = await chromium.launch({
@@ -309,15 +296,15 @@ async function main() {
   await page.waitForLoadState("domcontentloaded", { timeout: 30_000 });
 
   // ── Passo 5: Selecionar o ano no dropdown bootstrap-select ───────────────
-  log(`Passo 5 — Selecionando ano ${currentYear} no dropdown...`);
+  log(`Passo 5 — Selecionando ano ${paYear} no dropdown...`);
 
   // Abre o dropdown clicando no botão visual (data-id aponta para o select original)
   await page.locator('[data-id="anoCalendarioSelect"]').click();
   await delay(500);
 
-  // Clica na opção do ano atual — ignora as desabilitadas com :not(.disabled)
+  // Clica na opção do ano da competência — ignora as desabilitadas com :not(.disabled)
   await page
-    .locator(`.dropdown-menu li:not(.disabled) a:has-text("${currentYear}")`)
+    .locator(`.dropdown-menu li:not(.disabled) a:has-text("${paYear}")`)
     .first()
     .click();
 
@@ -332,14 +319,25 @@ async function main() {
   log("✅ Ano selecionado e página avançada!");
 
   // ── Passo 6: Marcar o checkbox do mês atual ───────────────────────────────
-  log(`Passo 6 — Selecionando checkbox do mês ${currentMonth}/${currentYear} (PA: ${paValue})...`);
+  log(`Passo 6 — Selecionando checkbox do mês ${paMonth}/${paYear} (PA: ${paValue})...`);
 
   // Aguarda a tabela carregar com os checkboxes de PA
   const checkbox = page.locator(`input.paSelecionado[value="${paValue}"]`);
   await checkbox.waitFor({ state: "visible", timeout: 15_000 });
   await checkbox.click();
 
-  log(`✅ Mês ${currentMonth}/${currentYear} selecionado!`);
+  log(`✅ Mês ${paMonth}/${paYear} selecionado!`);
+  await humanDelay();
+
+  // ── Passo 7: Clicar em Apurar/Gerar DAS ──────────────────────────────────
+  log("Passo 7 — Clicando em Apurar/Gerar DAS...");
+
+  const btnGerar = page.locator("#btnEmitirDas");
+  await btnGerar.waitFor({ state: "visible", timeout: 10_000 });
+  await btnGerar.click();
+  await page.waitForLoadState("domcontentloaded", { timeout: 30_000 });
+
+  log("✅ DAS gerada!");
   log("👀 Navegador mantido aberto. Pressione Ctrl+C para encerrar.");
 
   // Mantém o navegador aberto indefinidamente
