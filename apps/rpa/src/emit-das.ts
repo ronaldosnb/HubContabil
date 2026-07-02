@@ -193,7 +193,11 @@ async function main() {
     process.exit(1);
   }
 
-  log(`Iniciando emissão de DAS — CNPJ: ${CNPJ}`);
+  const now = new Date();
+  const currentYear = now.getFullYear().toString();
+  const currentMonth = (now.getMonth() + 1).toString(); // 1–12
+
+  log(`Iniciando emissão de DAS — CNPJ: ${CNPJ} | Competência: ${currentMonth}/${currentYear}`);
   log(CAPSOLVER_API_KEY ? "Modo: resolução automática de captcha (CapSolver)" : "Modo: resolução manual de captcha");
 
   const browser = await chromium.launch({
@@ -303,7 +307,28 @@ async function main() {
   await page.getByRole("link", { name: "Emitir Guia de Pagamento (DAS)" }).click();
   await page.waitForLoadState("domcontentloaded", { timeout: 30_000 });
 
-  log("✅ Chegou na página de emissão da DAS!");
+  // ── Passo 5: Selecionar o ano no dropdown bootstrap-select ───────────────
+  log(`Passo 5 — Selecionando ano ${currentYear} no dropdown...`);
+
+  // Abre o dropdown clicando no botão visual (data-id aponta para o select original)
+  await page.locator('[data-id="anoCalendarioSelect"]').click();
+  await delay(500);
+
+  // Clica na opção do ano atual — ignora as desabilitadas com :not(.disabled)
+  await page
+    .locator(`.dropdown-menu li:not(.disabled) a:has-text("${currentYear}")`)
+    .first()
+    .click();
+
+  await humanDelay();
+
+  // Tab + Enter para avançar (mais natural que clicar em botão de submissão)
+  await page.keyboard.press("Tab");
+  await delay(200);
+  await page.keyboard.press("Enter");
+  await page.waitForLoadState("domcontentloaded", { timeout: 30_000 });
+
+  log("✅ Ano selecionado e página avançada!");
   log("👀 Navegador mantido aberto. Pressione Ctrl+C para encerrar.");
 
   // Mantém o navegador aberto indefinidamente
