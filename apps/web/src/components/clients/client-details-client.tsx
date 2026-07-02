@@ -333,12 +333,6 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
     return <Card className="p-5 text-sm text-muted-foreground">Cliente não encontrado.</Card>;
   }
 
-  const mainContact = client.contacts.find((contact) => contact.isMain);
-  const activeServices = client.services.filter((service) => service.isActive);
-  const openTasks = client.tasks.filter((task) =>
-    ["TODO", "IN_PROGRESS", "WAITING_CLIENT"].includes(task.status)
-  );
-
   return (
     <div>
       <div className="mb-5">
@@ -370,14 +364,13 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
       {error ? <p className="mb-4 text-sm text-danger">{error}</p> : null}
 
       {activeTab === "Visão geral" ? (
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dados cadastrais</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-3" onSubmit={onClientSubmit}>
-                <Field label="Apelido">
+        <Card>
+          <CardHeader>
+            <CardTitle>Dados cadastrais</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" onSubmit={onClientSubmit}>
+                <Field className="md:col-span-1" label="Apelido">
                   <Input
                     required
                     value={clientForm.name}
@@ -386,7 +379,7 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
                     }
                   />
                 </Field>
-                <Field label="CPF/CNPJ">
+                <Field className="md:col-span-1 xl:col-span-2" label="CPF/CNPJ">
                   <div className="flex gap-2">
                     <Input
                       value={clientForm.documentNumber}
@@ -407,7 +400,7 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
                     </Button>
                   </div>
                 </Field>
-                <Field label="Razão social">
+                <Field className="md:col-span-2" label="Razão social">
                   <Input
                     value={clientForm.legalName}
                     onChange={(event) =>
@@ -502,7 +495,7 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
                     }
                   />
                 </Field>
-                <Field label="Atividade principal">
+                <Field className="md:col-span-2" label="Atividade principal">
                   <Input
                     value={clientForm.mainActivity}
                     onChange={(event) =>
@@ -543,7 +536,7 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
                     }
                   />
                 </Field>
-                <Field label="Complemento">
+                <Field className="md:col-span-2 xl:col-span-1" label="Complemento">
                   <Input
                     value={clientForm.addressComplement}
                     onChange={(event) =>
@@ -603,31 +596,23 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
                     ))}
                   </select>
                 </Field>
-                <Field label="Observações">
+                <Field className="md:col-span-2 xl:col-span-3" label="Observações">
                   <textarea
-                    className="min-h-24 w-full rounded-md border border-border bg-background p-3 text-sm outline-none"
+                    className="min-h-36 w-full rounded-md border border-border bg-background p-3 text-sm outline-none"
                     value={clientForm.notes}
                     onChange={(event) =>
                       setClientForm({ ...clientForm, notes: event.target.value })
                     }
                   />
                 </Field>
-                <Button disabled={isSaving} type="submit">
+                <div className="md:col-span-2 xl:col-span-3">
+                  <Button disabled={isSaving} type="submit">
                   Salvar alterações
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          <SummaryCard title="Serviços ativos" value={activeServices.length.toString()} />
-          <SummaryCard title="Contato principal" value={mainContact?.name ?? "Não definido"} />
-          <SummaryCard title="Tarefas abertas" value={openTasks.length.toString()} />
-          <SummaryCard
-            title="Documentos próximos do vencimento"
-            value={client.documents.length.toString()}
-          />
-          <SummaryCard title="Últimos envios" value={client.documentSends.length.toString()} />
-        </div>
+                  </Button>
+                </div>
+            </form>
+          </CardContent>
+        </Card>
       ) : null}
 
       {activeTab === "Contatos" ? (
@@ -994,26 +979,17 @@ export function ClientDetailsClient({ clientId }: { clientId: string }) {
   );
 }
 
-function SummaryCard({ title, value }: { title: string; value: string }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">{value}</CardContent>
-    </Card>
-  );
-}
-
 function Field({
   label,
-  children
+  children,
+  className = ""
 }: {
   label: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <label className="grid gap-1 text-sm font-medium">
+    <label className={`grid gap-1 text-sm font-medium ${className}`}>
       <span>{label}</span>
       {children}
     </label>
