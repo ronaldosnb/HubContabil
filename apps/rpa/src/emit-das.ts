@@ -12,6 +12,9 @@
 
 import { chromium } from "patchright";
 import type { Page } from "patchright";
+import { mkdirSync, writeFileSync, readdirSync, renameSync, copyFileSync } from "fs";
+import { homedir } from "os";
+import { join } from "path";
 
 const CNPJ = process.argv[2];
 const CAPSOLVER_API_KEY = process.env.CAPSOLVER_API_KEY ?? "";
@@ -188,9 +191,41 @@ async function main() {
   log(`Iniciando emissão de DAS — CNPJ: ${CNPJ} | Competência: ${paMonth}/${paYear}`);
   log(CAPSOLVER_API_KEY ? "Modo: resolução automática de captcha (CapSolver)" : "Modo: resolução manual de captcha");
 
-  const browser = await chromium.launch({
+  // Pasta de downloads
+  const downloadDir = join(homedir(), "Downloads", "das");
+  mkdirSync(downloadDir, { recursive: true });
+
+  // Perfil Chrome dedicado ao RPA — gravamos as preferências ANTES de abrir o browser
+  // para que o Chrome já inicie com downloads automáticos e SafeBrowsing desativado
+  const userDataDir = join(homedir(), ".hubcontabil-rpa");
+  const defaultDir = join(userDataDir, "Default");
+  mkdirSync(defaultDir, { recursive: true });
+
+  writeFileSync(
+    join(defaultDir, "Preferences"),
+    JSON.stringify({
+      download: {
+        default_directory: downloadDir,
+        prompt_for_download: false,
+        directory_upgrade: true,
+        open_pdf_in_system_reader: false,
+      },
+      safebrowsing: {
+        enabled: false,
+        enhanced: false,
+      },
+      profile: {
+        default_content_setting_values: {
+          automatic_downloads: 1,
+        },
+      },
+    })
+  );
+
+  // launchPersistentContext = browser + context em um só, com perfil persistente
+  const context = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
-    channel: "chrome", // Chrome real — muito mais difícil de detectar que Chromium
+    channel: "chrome",
     args: [
       "--disable-blink-features=AutomationControlled",
       "--no-sandbox",
@@ -199,16 +234,16 @@ async function main() {
       "--start-maximized",
       "--disable-extensions-except=",
       "--disable-plugins-discovery",
+      "--disable-features=InsecureDownloadWarnings,DownloadBubble,DownloadBubbleV2",
+      "--safebrowsing-disable-auto-update",
+      "--disable-client-side-phishing-detection",
     ],
-  });
-
-  const context = await browser.newContext({
-    // User-Agent do Chrome 124 real no Linux
     userAgent:
       "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.207 Safari/537.36",
-    viewport: null, // null = respeita o tamanho real da janela
+    viewport: null,
     locale: "pt-BR",
     timezoneId: "America/Sao_Paulo",
+    acceptDownloads: true,
     extraHTTPHeaders: {
       "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
     },
@@ -346,23 +381,49 @@ async function main() {
   const btnImprimir = page.locator('a[href*="imprimir"]');
   await btnImprimir.waitFor({ state: "visible", timeout: 10_000 });
 
-  // O link pode abrir nova aba ou disparar download — tratamos os dois casos
-  const [newPage, download] = await Promise.all([
-    page.context().waitForEvent("page", { timeout: 8_000 }).catch(() => null),
-    page.waitForEvent("download", { timeout: 8_000 }).catch(() => null),
+  const expectedFile = join(downloadDir, `das_${CNPJ}_${paValue}.pdf`);
+
+  // Snapshot dos arquivos existentes (fallback)
+  const beforeFiles = new Set(readdirSync(downloadDir));
+
+  // Captura o evento de download enquanto clica
+  const [download] = await Promise.all([
+    page.waitForEvent("download", { timeout: 30_000 }),
     btnImprimir.click(),
   ]);
 
-  if (download) {
-    const savePath = `/tmp/das_${CNPJ}_${paValue}.pdf`;
-    await download.saveAs(savePath);
-    log(`✅ PDF baixado em: ${savePath}`);
-  } else if (newPage) {
-    await newPage.waitForLoadState("domcontentloaded", { timeout: 15_000 });
-    log(`✅ PDF aberto em nova aba: ${newPage.url()}`);
+  // download.path() aguarda o download completar e retorna o caminho do arquivo
+  // temporário do Playwright — retorna null se o Chrome bloqueou/redirecionou
+  const tempPath = await download.path();
+
+  if (tempPath) {
+    // Playwright capturou o arquivo — copia para o destino final
+    copyFileSync(tempPath, expectedFile);
+    log(`✅ PDF salvo em: ${expectedFile}`);
   } else {
-    await page.waitForLoadState("domcontentloaded", { timeout: 15_000 });
-    log(`✅ Navegou para: ${page.url()}`);
+    // Chrome tratou o download diretamente — procura o arquivo no diretório configurado
+    log("Playwright não interceptou o arquivo. Buscando em ~/Downloads/das/ ...");
+
+    let foundName: string | null = null;
+    for (let i = 0; i < 30; i++) {
+      await delay(1_000);
+      const current = readdirSync(downloadDir);
+      const newFiles = current.filter(
+        (f) => !beforeFiles.has(f) && !f.endsWith(".crdownload")
+      );
+      if (newFiles.length > 0) {
+        foundName = newFiles[0];
+        break;
+      }
+    }
+
+    if (!foundName) {
+      const reason = await download.failure();
+      throw new Error(`Download não encontrado. Motivo Playwright: ${reason ?? "desconhecido"}`);
+    }
+
+    renameSync(join(downloadDir, foundName), expectedFile);
+    log(`✅ PDF salvo em: ${expectedFile}`);
   }
 
   log("🏁 RPA concluído com sucesso!");
