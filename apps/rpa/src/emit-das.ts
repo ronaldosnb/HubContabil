@@ -338,6 +338,34 @@ async function main() {
   await page.waitForLoadState("domcontentloaded", { timeout: 30_000 });
 
   log("✅ DAS gerada!");
+  await humanDelay();
+
+  // ── Passo 8: Baixar o PDF da DAS ─────────────────────────────────────────
+  log("Passo 8 — Clicando em Imprimir/Visualizar PDF...");
+
+  const btnImprimir = page.locator('a[href*="imprimir"]');
+  await btnImprimir.waitFor({ state: "visible", timeout: 10_000 });
+
+  // O link pode abrir nova aba ou disparar download — tratamos os dois casos
+  const [newPage, download] = await Promise.all([
+    page.context().waitForEvent("page", { timeout: 8_000 }).catch(() => null),
+    page.waitForEvent("download", { timeout: 8_000 }).catch(() => null),
+    btnImprimir.click(),
+  ]);
+
+  if (download) {
+    const savePath = `/tmp/das_${CNPJ}_${paValue}.pdf`;
+    await download.saveAs(savePath);
+    log(`✅ PDF baixado em: ${savePath}`);
+  } else if (newPage) {
+    await newPage.waitForLoadState("domcontentloaded", { timeout: 15_000 });
+    log(`✅ PDF aberto em nova aba: ${newPage.url()}`);
+  } else {
+    await page.waitForLoadState("domcontentloaded", { timeout: 15_000 });
+    log(`✅ Navegou para: ${page.url()}`);
+  }
+
+  log("🏁 RPA concluído com sucesso!");
   log("👀 Navegador mantido aberto. Pressione Ctrl+C para encerrar.");
 
   // Mantém o navegador aberto indefinidamente
